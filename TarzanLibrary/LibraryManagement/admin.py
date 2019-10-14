@@ -22,7 +22,11 @@ class BorrowAdmin(admin.ModelAdmin):
     ordering = ('return_date',)
 
 
+class AuthorAdmin(admin.ModelAdmin):
+    list_display = ('author_name', 'about_author')
+
+
 admin.site.register(Member, MemberAdmin)
-admin.site.register(Author, )
+admin.site.register(Author, AuthorAdmin)
 admin.site.register(Book, BookAdmin)
 admin.site.register(Borrow, BorrowAdmin)

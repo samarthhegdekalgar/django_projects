@@ -17,7 +17,7 @@ class Book(models.Model):
     book_name = models.CharField(max_length=200, help_text='Enter book name')
     ISBN = models.CharField(max_length=23, blank=True, validators=[MinLengthValidator(13)], help_text='Enter ISBN')
     category = models.CharField(max_length=50, blank=True, help_text='Enter category of book')
-    availability = models.BooleanField(default=False)
+    availability = models.BooleanField(default=True)
     number_of_copy = models.IntegerField(default=1, help_text='Number of available books')
     in_stock = models.IntegerField(default=1, help_text='Number of copies available for Members')
     book_price = models.IntegerField(default=0, help_text='Book price on market')
@@ -70,12 +70,14 @@ class Borrow(models.Model):
 @receiver(signals.pre_save, sender=Borrow)
 def is_returned(sender, instance, **kwargs):
     stock = instance.borrowed_book.in_stock
-    if not instance.book_returned:
+    if   instance.book_returned:
         if instance.borrowed_book.number_of_copy > stock:
             stock += 1
             book = instance.borrowed_book
             instance.book_returned = True
             book.in_stock = stock
+            if stock > 0:
+                book.availability = True
             book.save()
 
 
@@ -88,5 +90,7 @@ def is_borrowed(sender, instance, created, **kwargs):
                 stock -= 1
                 book = instance.borrowed_book
                 book.in_stock = stock
+                if stock <= 0:
+                    book.availability = False
                 book.save()
 

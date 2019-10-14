@@ -8,5 +8,14 @@
   <h1>
     <center>Welcome to TarzanSkills Book Repository </center>
   </h1>
+  <div class="books">
+    {% for details in book %}
+        <div class="book">
+          <h4><a href="#">{{details.book_name}}</a> </h4>
+          by: <b><font size="2" color="green">{{details.author_name.author_name}}</font></b>
+          <p>{{details.book_description}}</p>
+        </div>
+    {% endfor %}
+  </div>
 </body>
 </html>
