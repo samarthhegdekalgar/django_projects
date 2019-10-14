@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinLengthValidator
 from datetime import datetime, date, timedelta
+from django.db.models import signals
+from django.dispatch import receiver
 
 
 class Author(models.Model):
@@ -17,6 +19,7 @@ class Book(models.Model):
     category = models.CharField(max_length=50, blank=True, help_text='Enter category of book')
     availability = models.BooleanField(default=False)
     number_of_copy = models.IntegerField(default=1, help_text='Number of available books')
+    in_stock = models.IntegerField(default=1, help_text='Number of copies available for Members')
     book_price = models.IntegerField(default=0, help_text='Book price on market')
     author_name = models.ForeignKey(Author, on_delete=models.CASCADE)
     book_description = models.TextField(blank=True, null=True, help_text='Complete overview of book')
@@ -39,15 +42,51 @@ class Member(models.Model):
 
 
 class Borrow(models.Model):
-    borrowed_member = models.ForeignKey(Member, on_delete=models.CASCADE)
+    borrowed_member = models.ForeignKey(Member, on_delete=models.CASCADE, verbose_name='Member')
     borrowed_book = models.ForeignKey(Book, on_delete=models.CASCADE)
     borrow_date = models.DateField(auto_now_add=True)
-    return_date = models.DateField(default=date.today()+timedelta(days=7))
-    expired = None
+    book_returned = models.BooleanField(auto_created=True, default=False)
+    return_date = models.DateField(default=date.today() + timedelta(days=7))
 
-    def is_due(self):
-        return_date = datetime.strptime(self.return_date, '%y %m %d')
+    def expired(self):
+        return_date = self.return_date
         if date.today() > return_date:
-            self.expired = 'Yes'
+            return True
         else:
-            self.expired = 'No'
+            return False
+
+    def is_returned(self):
+        if self.book_returned:
+            return True
+        else:
+            return False
+
+    is_returned.boolean = True
+    is_returned.short_description = 'Returned'
+    expired.boolean = True
+    expired.short_description = 'Expired'
+
+
+@receiver(signals.pre_save, sender=Borrow)
+def is_returned(sender, instance, **kwargs):
+    stock = instance.borrowed_book.in_stock
+    if not instance.book_returned:
+        if instance.borrowed_book.number_of_copy > stock:
+            stock += 1
+            book = instance.borrowed_book
+            instance.book_returned = True
+            book.in_stock = stock
+            book.save()
+
+
+@receiver(signals.post_save, sender=Borrow)
+def is_borrowed(sender, instance, created, **kwargs):
+    if not instance.book_returned:
+        if created:
+            stock = instance.borrowed_book.in_stock
+            if stock > 0:
+                stock -= 1
+                book = instance.borrowed_book
+                book.in_stock = stock
+                book.save()
+
