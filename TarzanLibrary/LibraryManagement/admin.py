@@ -1,5 +1,37 @@
 from django.contrib import admin
 from .models import Book, Author, Member, Borrow
+from django import forms
+
+
+class AuthorAdminForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(AuthorAdminForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        author = self.cleaned_data.get('author_name')
+        if len(author) < 4:
+            raise forms.ValidationError('Please enter a valid name, name cannot be less than 4 Characters',
+                                        code='invalid')
+        return self.cleaned_data
+
+    def save(self, commit=True):
+        return super(AuthorAdminForm, self).save(commit=commit)
+
+
+class BorrowAdminForm(forms.ModelForm):
+    def __inti__(self, *args, **kwargs):
+        super(BorrowAdminForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        book = self.cleaned_data.get('borrowed_book')
+        is_returned = self.cleaned_data.get('book_returned')
+        flag = self.cleaned_data.get('returned')
+        if book.in_stock <= 0 and not is_returned:
+            raise forms.ValidationError(f"{book.book_name} is not available", code="not available")
+        return self.cleaned_data
+
+    def save(self, commit=True):
+        return super(BorrowAdminForm, self).save(commit=commit)
 
 
 class BookAdmin(admin.ModelAdmin):
@@ -20,10 +52,12 @@ class BorrowAdmin(admin.ModelAdmin):
     list_filter = ('return_date',)
     search_fields = ('borrowed_member__member_name', 'borrowed_member__member_ID')
     ordering = ('return_date',)
+    form = BorrowAdminForm
 
 
 class AuthorAdmin(admin.ModelAdmin):
     list_display = ('author_name', 'about_author')
+    form = AuthorAdminForm
 
 
 admin.site.register(Member, MemberAdmin)

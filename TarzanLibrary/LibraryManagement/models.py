@@ -3,6 +3,7 @@ from django.core.validators import MinLengthValidator
 from datetime import datetime, date, timedelta
 from django.db.models import signals
 from django.dispatch import receiver
+from django import forms
 
 
 class Author(models.Model):
@@ -45,7 +46,7 @@ class Borrow(models.Model):
     borrowed_member = models.ForeignKey(Member, on_delete=models.CASCADE, verbose_name='Member')
     borrowed_book = models.ForeignKey(Book, on_delete=models.CASCADE)
     borrow_date = models.DateField(auto_now_add=True)
-    book_returned = models.BooleanField(auto_created=True, default=False)
+    book_returned = models.BooleanField(default=False)
     return_date = models.DateField(default=date.today() + timedelta(days=7))
 
     def expired(self):
@@ -70,7 +71,7 @@ class Borrow(models.Model):
 @receiver(signals.pre_save, sender=Borrow)
 def is_returned(sender, instance, **kwargs):
     stock = instance.borrowed_book.in_stock
-    if   instance.book_returned:
+    if instance.book_returned:
         if instance.borrowed_book.number_of_copy > stock:
             stock += 1
             book = instance.borrowed_book
@@ -93,4 +94,3 @@ def is_borrowed(sender, instance, created, **kwargs):
                 if stock <= 0:
                     book.availability = False
                 book.save()
-
