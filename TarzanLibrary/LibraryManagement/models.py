@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import MinLengthValidator
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 from django.db.models import signals
 from django.dispatch import receiver
 from django import forms
@@ -27,6 +27,12 @@ class Book(models.Model):
 
     def __str__(self):
         return self.book_name
+
+    def get_title(self):
+        return self.book_name
+
+    def get_availability(self):
+        return self.availability
 
 
 class Member(models.Model):
