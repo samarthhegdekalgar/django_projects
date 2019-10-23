@@ -34,7 +34,6 @@ class FormRecordAdmin(forms.ModelForm):
         if co_date < ci_date:
             raise forms.ValidationError(f'Please select the valid dates', code='invalid dates')
 
-
         if p_total > 3:
             raise forms.ValidationError(f"Sorry! up to three members can accommodate", code='count exceeded')
         if date.today() == ci_date and is_canceled:
